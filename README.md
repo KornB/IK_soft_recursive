@@ -23,6 +23,7 @@ This repository contains data preparation, training, and inference scripts for t
 2) Prepare data (example for a P→D dataset)  
    python Data_sep/data_prepare_shift_frame_refA_results.py  
    Outputs land in data_sep/ as *.npz plus normalization stats *_norm.npz.
+<img width="1813" height="845" alt="fig5" src="https://github.com/user-attachments/assets/ea4d862d-7aee-41c3-bb58-65a508600559" />
 
 3) Train models (example: proximal IK)  
    python Train_code/train_seq_model_LSTM_P2.py  
@@ -45,6 +46,6 @@ This repository contains data preparation, training, and inference scripts for t
   - Crosstalk D→P: Trained_models/crosstalkD2P_4_128_LSTM.pth
 
 ## Citation
-If you use this code, please cite the accompanying RAL 2025 submission (see RAL_2025_ML_Hysteresis_Crosstalk_SoftMani_Re1_submitted_main.pdf).
+If you use this code, please cite the accompanying RAL 2026 submission (see "Data-Efficient Modeling of Hysteresis and Crosstalk for Inverse Kinematics of Soft Manipulators",).
 
 Any further question plase contact email: k.borvorntajanya22@imperial.ac.uk
