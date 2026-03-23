@@ -54,8 +54,7 @@ These two sensor measurements define:
 - the endpoint of the proximal segment
 - the final endpoint of the distal segment
 
-  <img width="1407" height="709" alt="image" src="https://github.com/user-attachments/assets/270543b6-fcc5-48f0-9cb4-3bcbcd5f5a67" />
-
+<img width="1445" height="696" alt="image" src="https://github.com/user-attachments/assets/6dcf13d4-b652-4377-a799-28568b45c422" />
 
 This is the minimum sensing requirement for the **RSCC pipeline**.
 
