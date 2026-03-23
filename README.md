@@ -320,6 +320,7 @@ Y.shape = [N, 3]
 ---
 
 ## 6. Proximal-to-distal response model (P2D / crosstalk-related model)
+<img width="1863" height="781" alt="image" src="https://github.com/user-attachments/assets/52c4c4cd-a4d9-4f17-b250-d583fb6011bd" />
 
 ### Purpose
 
@@ -447,6 +448,7 @@ Y.shape = [N, 2]
 ---
 
 ## 8. RSCC pipeline requirement
+<img width="1933" height="740" alt="image" src="https://github.com/user-attachments/assets/dbdb34bc-2853-4904-90ee-6c95988465a3" />
 
 The RSCC pipeline uses the segment-end states together with the trained models.
 
