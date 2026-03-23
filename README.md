@@ -84,43 +84,100 @@ Use the scripts in `RSCC_pressuregen/` together with trained `.pth` models to ge
 The typical workflow in this repository is:
 
 ```text
-Raw CSV log
-→ Data_sep preprocessing
-→ segment-level processed dataset
-→ normalized input/output training data
-→ Train_code model training
-→ saved model checkpoint (.pth)
-→ RSCC_pressuregen inference / pressure generation
-```
-
-### Example data flow
-
-```text
-Example_data/raw_data/
+Example_data/raw_data/*.csv
     ↓
-Data_sep/
+Data_sep/ (preprocessing)
     ↓
-Example_data/process_data/ or generated processed files
+Example_data/process_data/*.npz / *.csv
     ↓
-Train_code/
+Train_code/ (model training)
     ↓
 Trained_models/*.pth
     ↓
-RSCC_pressuregen/
+RSCC_pressuregen/ (inference / pressure generation)
 ```
 
-### Example model usage flow
+---
+
+## Step-by-Step Commands
+
+### 1. Preprocessing (raw → processed data)
+
+Convert raw sensor logs into model-ready datasets.
+
+Example command:
+
+```bash
+python Data_sep/data_prepare_shift_frame_1seg_8_10_P.py --log realtime_log_ros_20251108_205609P.csv
+```
+
+Input:
 
 ```text
-raw sensor log
-→ preprocess into local segment features
-→ build model input/output pairs
-→ normalize data
-→ train model
-→ save trained weights (.pth)
-→ load trained model
-→ generate pressure output
+Example_data/raw_data/realtime_log_ros_20251108_205609P.csv
 ```
+
+Output:
+
+```text
+Example_data/process_data/result*.npz
+Example_data/process_data/result*_norm.npz
+Example_data/process_data/result*.csv
+```
+
+### 2. Train Models (processed → `.pth`)
+
+Example commands:
+
+```bash
+python Train_code/train_proximal_LSTM.py
+python Train_code/train_distal_LSTM.py
+python Train_code/train_crosstalk_P2D.py
+python Train_code/train_crosstalk_D2P.py
+```
+
+Output:
+
+```text
+Trained_models/*.pth
+```
+
+> Replace the training script names above with the actual filenames in `Train_code/` if they differ in your local repository.
+
+### 3. Inference / Pressure Generation
+
+#### (A) Proximal only
+
+```bash
+python RSCC_pressuregen/predict_proximal_only.py
+```
+
+#### (B) Distal only
+
+```bash
+python RSCC_pressuregen/predict_distal_only.py
+```
+
+#### (C) Crosstalk only
+
+```bash
+python RSCC_pressuregen/predict_crosstalk_P2D_only.py
+python RSCC_pressuregen/predict_crosstalk_D2P_only.py
+```
+
+#### (D) Full RSCC
+
+```bash
+python RSCC_pressuregen/rscc_pressure_generation.py
+```
+
+Output:
+
+```text
+Command/*.csv
+```
+
+> Replace the inference script names above with the actual filenames in `RSCC_pressuregen/` if they differ in your local repository.
 
 ---
 
