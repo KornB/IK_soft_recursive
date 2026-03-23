@@ -11,8 +11,8 @@ import os
 # Paths & config
 # =============================================================================
 output_dir = 'model'
-data_dir = 'data_sep'
-save_dir = 'command'
+data_dir = 'Example_data/process_data'
+save_dir = 'Command'
 os.makedirs(output_dir, exist_ok=True)
 os.makedirs(save_dir, exist_ok=True)
 
