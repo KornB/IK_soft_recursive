@@ -215,13 +215,3 @@ For a new user of the repository, the recommended order is:
 5. training scripts in `Train_code/`
 6. RSCC inference scripts in `RSCC_pressuregen/`
 
----
-
-## 11. Planned updates
-
-This document can later be expanded with:
-- exact dataset filenames
-- script-by-script usage examples
-- final publication metadata
-- DOI and journal citation
-- benchmark results and figures
