@@ -45,28 +45,53 @@ This repository uses raw tracked-sensor logs and pressure commands to build trai
 
    ```text
     Raw CSV (0A, 0B, 0C)
-        ↓
+            │
+            ▼
     Preprocessing
     (frame transform + feature extraction)
-        ↓
-    Segment States
-    [s_prox, s_dist]
-
-    ├── Proximal Model → [P1,P2,P3]
-    │           ↓
-    │     P2D Crosstalk → distal offset
-    │           ↓
-    │   Compensated Distal Target
-    │           ↓
-    │      Distal Model → [P4,P5,P6]
-    │           ↓
-    │     D2P Crosstalk → proximal offset
-    │           ↓
-    └── Compensated Proximal Target
-                ↓
-        Update Segment States
-                ↓
-        (iterate until convergence)
+            │
+            ▼
+    ┌──────────────────────────┐
+    │ Segment States           │◄───────────────┐
+    │ [s_prox, s_dist]         │                │
+    └─────────────┬────────────┘                │
+                  │                             │
+                  ├──────────────┐              │
+                  ▼              ▼              │
+          Proximal Model     Crosstalk Model (P2D)
+          [P1,P2,P3]         [X,Y] offset (to distal)
+                  │              │
+                  └──────┬───────┘
+                         ▼
+               Compensated Distal Target
+                         │
+                         ▼
+                  Distal Model
+                  [P4,P5,P6]
+                         │
+                         ▼
+               Crosstalk Model (D2P)
+               [X,Y] offset (to proximal)
+                         │
+                         ▼
+               Compensated Proximal Target
+                         │
+                         ▼
+               Update Segment States
+               [s_prox, s_dist]
+                         │
+                         ▼
+                         │
+                         └───────────────┐
+                                         │
+                                         ▼
+                                 ┌───────────────┐
+                                 │               │
+                                 │  (same block) │
+                                 │               │
+                                 └──────▲────────┘
+                                        │
+                                        └──────── back to Segment States
 
 ---
 
