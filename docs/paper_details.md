@@ -36,6 +36,10 @@ The main idea is to decompose the multi-segment inverse problem into smaller lea
 
 This gives a modular control pipeline that can be trained and tested more efficiently than a fully monolithic model.
 
+
+<img width="1933" height="740" alt="image" src="https://github.com/user-attachments/assets/6c6bcc11-1a4b-4a68-a76b-7bb9e8e1b2bb" />
+
+
 ---
 
 ## 3. Repository-to-paper mapping
