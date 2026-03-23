@@ -24,6 +24,9 @@ The repository is organized to support:
 3. pretrained model loading
 4. RSCC pressure generation and testing
 
+For detailed paper notes, see [`docs/paper_details.md`](docs/paper_details.md).  
+For detailed raw-data and processed-data format, see [`docs/data_format.md`](docs/data_format.md).
+
 ---
 
 ## Repository Layout
@@ -37,9 +40,9 @@ The repository is organized to support:
 | `Trained_models/` | Pretrained model checkpoints |
 | `Example_data/raw_data/` | Example raw sensor logs |
 | `Example_data/process_data/` | Example processed datasets |
-| `RAL_2025_ML_Hysteresis_Crosstalk_SoftMani_Re1_submitted_main.pdf` | Paper PDF |
 | `docs/paper_details.md` | Detailed summary of the paper and how the repository maps to it |
 | `docs/data_format.md` | Detailed raw-data and processed-data specification |
+| `RAL_2025_ML_Hysteresis_Crosstalk_SoftMani_Re1_submitted_main.pdf` | Paper PDF |
 
 ---
 
@@ -57,20 +60,67 @@ conda activate torchenv
 Run the preprocessing scripts in `Data_sep/` to convert raw CSV logs into processed datasets.
 
 Typical outputs include:
-- processed data in `.npz`
+- processed training data in `.npz`
 - normalization statistics in `.npz`
 - inspection tables in `.csv`
 
 ### 3. Train models
 
-Run the training scripts in `Train_code/` for:
-- proximal pressure mapping
-- distal pressure mapping
+Run the training scripts in `Train_code/` to train:
+- proximal pressure mapping model
+- distal pressure mapping model
 - crosstalk-related models
+
+Trained models are typically saved as `.pth` checkpoints.
 
 ### 4. Run RSCC pressure generation
 
-Use the scripts in `RSCC_pressuregen/` to generate pressure commands using the trained models.
+Use the scripts in `RSCC_pressuregen/` together with trained `.pth` models to generate pressure commands for two-segment control.
+
+---
+
+## End-to-End Workflow
+
+The typical workflow in this repository is:
+
+```text
+Raw CSV log
+→ Data_sep preprocessing
+→ segment-level processed dataset
+→ normalized input/output training data
+→ Train_code model training
+→ saved model checkpoint (.pth)
+→ RSCC_pressuregen inference / pressure generation
+```
+
+### Example data flow
+
+```text
+Example_data/raw_data/
+    ↓
+Data_sep/
+    ↓
+Example_data/process_data/ or generated processed files
+    ↓
+Train_code/
+    ↓
+Trained_models/*.pth
+    ↓
+RSCC_pressuregen/
+```
+
+### Example model usage flow
+
+```text
+raw sensor log
+→ preprocess into local segment features
+→ build model input/output pairs
+→ normalize data
+→ train model
+→ save trained weights (.pth)
+→ load trained model
+→ generate pressure output
+```
 
 ---
 
@@ -94,59 +144,7 @@ Initial pressure commands are estimated by the segment-wise models, crosstalk ef
 
 ---
 
-## Data Format
-
-A short summary is given below.  
-For the full specification, see [`docs/data_format.md`](docs/data_format.md).
-
-### Raw log requirement
-
-The preprocessing scripts expect a raw `.csv` log containing:
-- timestamp
-- chamber pressures
-- stiffness-related index
-- three tracked sensor streams with position and quaternion orientation
-
-### Required columns
-
-| Column group | Required columns |
-|---|---|
-| Time | `time` |
-| Pressure | `p1`, `p2`, `p3`, `p4`, `p5`, `p6` |
-| Index | `ks` |
-| 0A pose | `0A_pos_x`, `0A_pos_y`, `0A_pos_z`, `0A_orient_x`, `0A_orient_y`, `0A_orient_z`, `0A_orient_w` |
-| 0B pose | `0B_pos_x`, `0B_pos_y`, `0B_pos_z`, `0B_orient_x`, `0B_orient_y`, `0B_orient_z`, `0B_orient_w` |
-| 0C pose | `0C_pos_x`, `0C_pos_y`, `0C_pos_z`, `0C_orient_x`, `0C_orient_y`, `0C_orient_z`, `0C_orient_w` |
-
-### Example raw row (split view)
-
-**Time and pressure**
-
-| time | p1 | p2 | p3 | p4 | p5 | p6 | ks |
-|---:|---:|---:|---:|---:|---:|---:|---:|
-| 1762606570 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
-
-**Sensor 0A**
-
-| 0A_pos_x | 0A_pos_y | 0A_pos_z | 0A_orient_x | 0A_orient_y | 0A_orient_z | 0A_orient_w |
-|---:|---:|---:|---:|---:|---:|---:|
-| 15.3788 | 29.1995 | -210.7228 | -0.6118 | 0.0277 | 0.0000 | 0.7905 |
-
-**Sensor 0B**
-
-| 0B_pos_x | 0B_pos_y | 0B_pos_z | 0B_orient_x | 0B_orient_y | 0B_orient_z | 0B_orient_w |
-|---:|---:|---:|---:|---:|---:|---:|
-| -5.9536 | -49.4013 | -217.9330 | -0.7429 | 0.0555 | 0.0822 | 0.6620 |
-
-**Sensor 0C**
-
-| 0C_pos_x | 0C_pos_y | 0C_pos_z | 0C_orient_x | 0C_orient_y | 0C_orient_z | 0C_orient_w |
-|---:|---:|---:|---:|---:|---:|---:|
-| 14.5586 | 3.9051 | -217.2526 | -0.6361 | -0.0203 | 0.0000 | 0.7713 |
-
----
-
-## Model Input Summary
+## Model Summary
 
 ### Proximal pressure model
 
@@ -172,32 +170,33 @@ The preprocessing scripts expect a raw `.csv` log containing:
 [P4, P5, P6] -> [X, Y]
 ```
 
+For the full raw-data format, processed dataset format, and model I/O details, see [`docs/data_format.md`](docs/data_format.md).
+
 ---
 
-## Example Workflow
+## Suggested Usage Order
 
-```text
-Raw CSV
-→ Data_sep preprocessing
-→ processed .npz / .csv
-→ Train_code model training
-→ Trained_models checkpoints
-→ RSCC_pressuregen inference
-```
+For a new user of the repository, the recommended order is:
+
+1. Read this `README.md`
+2. Check [`docs/paper_details.md`](docs/paper_details.md)
+3. Check [`docs/data_format.md`](docs/data_format.md)
+4. Start from `Example_data/raw_data/`
+5. Run preprocessing in `Data_sep/`
+6. Train or load models from `Train_code/` and `Trained_models/`
+7. Run inference in `RSCC_pressuregen/`
 
 ---
 
 ## Citation
 
-If you use this repository, please cite both the code repository and the accompanying paper.
+If you use this repository, please cite both the repository and the accompanying paper.
 
 ### Repository citation
 
 A `CITATION.cff` file is provided in the repository root so GitHub can display a citation entry automatically.
 
 ### Paper citation
-
-Please cite the accompanying manuscript:
 
 ```bibtex
 @misc{korn_soft_recursive,
@@ -208,7 +207,7 @@ Please cite the accompanying manuscript:
 }
 ```
 
-Update the BibTeX entry above once the final publication details, pages, and DOI are available.
+Update this BibTeX entry once the final publication details, pages, and DOI are available.
 
 ---
 
