@@ -70,10 +70,9 @@ The current preprocessing scripts expect a raw `.csv` log with the following col
 
 ### Example raw row
 
-```text
-time,p1,p2,p3,p4,p5,p6,0A_pos_x,0A_pos_y,0A_pos_z,0A_orient_x,0A_orient_y,0A_orient_z,0A_orient_w,...
-1762606570.41,0,0,0,0,0,0,15.3788,29.1995,-210.7228,...
-```
+| time | p1 | p2 | p3 | p4 | p5 | p6 | ks | 0A_pos_x | 0A_pos_y | 0A_pos_z | 0B_pos_x | 0B_pos_y | 0B_pos_z | 0C_pos_x | 0C_pos_y | 0C_pos_z |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1762606570.41 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 15.3788 | 29.1995 | -210.7228 | -5.9536 | -49.4013 | -217.9330 | 14.5586 | 3.9051 | -217.2526 |
 
 ---
 
