@@ -51,19 +51,13 @@ The current preprocessing scripts expect a raw `.csv` log with the following col
 
 ### Required columns
 
-```text
-time
-p1, p2, p3, p4, p5, p6
-
-0A_pos_x, 0A_pos_y, 0A_pos_z
-0A_orient_x, 0A_orient_y, 0A_orient_z, 0A_orient_w
-
-0B_pos_x, 0B_pos_y, 0B_pos_z
-0B_orient_x, 0B_orient_y, 0B_orient_z, 0B_orient_w
-
-0C_pos_x, 0C_pos_y, 0C_pos_z
-0C_orient_x, 0C_orient_y, 0C_orient_z, 0C_orient_w
-```
+| Column group | Required columns |
+|---|---|
+| Time | `time` |
+| Pressure | `p1`, `p2`, `p3`, `p4`, `p5`, `p6` |
+| 0A pose | `0A_pos_x`, `0A_pos_y`, `0A_pos_z`, `0A_orient_x`, `0A_orient_y`, `0A_orient_z`, `0A_orient_w` |
+| 0B pose | `0B_pos_x`, `0B_pos_y`, `0B_pos_z`, `0B_orient_x`, `0B_orient_y`, `0B_orient_z`, `0B_orient_w` |
+| 0C pose | `0C_pos_x`, `0C_pos_y`, `0C_pos_z`, `0C_orient_x`, `0C_orient_y`, `0C_orient_z`, `0C_orient_w` |
 
 ### Notes
 
