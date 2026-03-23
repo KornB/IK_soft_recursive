@@ -20,57 +20,6 @@ This repository contains data preparation, training, and inference scripts for t
    conda env create -f environment.yml  
    conda activate torchenv
 
-# Data Requirements
-
-This section describes the required sensor setup and data formats for training and deployment of the models used in this repository. The framework includes:
-
-1. **Pressure Mapping Model**  
-   Maps segment tip states or target states to chamber pressure commands.
-
-2. **Crosstalk Model**  
-   Predicts inter-segment coupling effects caused by the motion or pressurization of another segment.
-
-3. **RSCC Pipeline**  
-   Recursive Segment-wise Crosstalk Compensation pipeline for multi-segment control using segment-end tip positions.
-
----
-
-## 1. Sensor Setup
-
-### 1.1 Required sensors
-The system requires tip position sensing for each segment endpoint. Depending on the experimental setup, this can be obtained using:
-- EM tracking sensors
-- optical tracking
-- vision-based tracking
-- any equivalent pose sensing system with sufficient accuracy
-
-### 1.2 Sensor placement
-For a two-segment manipulator, the minimum required sensing locations are:
-
-- **Sensor A** at the end of **Segment 1**
-- **Sensor B** at the end of **Segment 2** (distal tip)
-
-These two sensor measurements define:
-- the endpoint of the proximal segment
-- the final endpoint of the distal segment
-
-<img width="1445" height="696" alt="image" src="https://github.com/user-attachments/assets/6dcf13d4-b652-4377-a799-28568b45c422" />
-
-This is the minimum sensing requirement for the **RSCC pipeline**.
-
-### 1.3 Coordinate frame
-All recorded positions must be expressed in a **consistent global frame** or a clearly defined robot base frame.  
-The same frame must be used:
-- during dataset collection
-- during model training
-- during deployment
-
-### 1.4 Sampling considerations
-- Sensor and pressure command data should be time-aligned
-- All channels should be sampled at a consistent rate, or resampled offline before training
-- Missing samples should be removed or interpolated consistently
-- Units must remain consistent across all files
-
 Recommended units:
 - Position: **mm**
 - Pressure: **kPa** or **bar** (choose one and use it consistently)
@@ -149,6 +98,8 @@ For the downstream control pipeline, the important states are the two segment-en
 
 - proximal segment end
 - distal segment end
+
+<img width="1445" height="696" alt="image" src="https://github.com/user-attachments/assets/6dcf13d4-b652-4377-a799-28568b45c422" />
 
 ---
 
