@@ -81,6 +81,9 @@ The current preprocessing logic assumes three tracked sensor streams:
 - one proximal segment-end sensor
 - one distal segment-end sensor
 
+<img width="967" height="507" alt="image" src="https://github.com/user-attachments/assets/40f0b151-7ff5-4b23-af62-09b48b51aeb6" />
+
+
 In the raw CSV, these are provided as:
 - `0A`
 - `0B`
