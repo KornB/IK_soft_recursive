@@ -80,18 +80,7 @@ Preprocessing
            Update Segment States
            [s_prox, s_dist]
                      │
-                     ▼
-                     │
-                     └───────────────┐
-                                     │
-                                     ▼
-                             ┌───────────────┐
-                             │               │
-                             │  (same block) │
-                             │               │
-                             └──────▲────────┘
-                                    │
-                                    └──────── back to Segment States
+                     └──────────────────────┘
 
 ---
 
