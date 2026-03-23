@@ -285,3 +285,5 @@ This project is released under the MIT License. See [`LICENSE`](LICENSE).
 ## Contact
 
 For questions related to the repository, models, or paper, please open an issue or contact the repository author.
+k.borvorntajanya22@imperial.ac.uk
+korn.bov@gmail.com
