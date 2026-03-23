@@ -1,103 +1,111 @@
-# RSCC Pressure Generation – Code for RAL 2026 submission
+# IK Soft Recursive
 
-This repository contains data preparation, training, and inference scripts for the RAL 2026 paper “ML Hysteresis & Crosstalk Compensation for a Soft Manipulator.” It trains LSTM/Transformer models for inverse kinematics and crosstalk compensation, and generates RSCC pressure commands for two soft arm segments.
+Code and example data for recursive inverse kinematics and crosstalk compensation in a two-segment soft manipulator.
+
+This repository contains preprocessing, training, and inference code for segment-wise pressure prediction and recursive segment-wise crosstalk compensation (RSCC). The current codebase includes:
+- proximal pressure mapping
+- distal pressure mapping
+- proximal-to-distal crosstalk-related modeling
+- RSCC pressure generation for two-segment execution
+
+---
+
+## Overview
+
+Soft continuum manipulators with morphable chambers exhibit hysteresis and inter-segment coupling.  
+This repository implements a recursive pipeline that combines:
+- **segment-wise inverse pressure models**
+- **crosstalk-related compensation models**
+- **iterative pressure generation for multi-segment control**
+
+The repository is organized to support:
+1. raw log preprocessing
+2. model training
+3. pretrained model loading
+4. RSCC pressure generation and testing
+
+---
 
 ## Repository Layout
-- environment.yml — conda environment (Python 3.9, PyTorch 2.6.0+cu126, NumPy/Pandas/Sklearn/Matplotlib).
-- Data_sep/ — dataset builders (data_prepare_shift_frame_*.py) converting raw logs into normalized .npz files for proximal/distal IK and crosstalk.
-- Train_code/ — training scripts:
-  - train_seq_model_LSTM_P2.py, train_seq_model_LSTM_D2.py, train_seq_model_LSTM_PD_11.py — proximal/distal IK LSTMs.
-  - train_seq_model_encoder_crosstalkP2D_LSTM.py, train_seq_model_encoder_crosstalkD2P_LSTM.py — crosstalk LSTMs.
-  - train_seq_model_Transformer_P2.py — Transformer IK variant.
-- RSCC_pressuregen/test_model_with_GT_PD_shape_LSTM_11_cross_H.py — RSCC loop generating pressure commands for a circular trajectory, using trained IK + crosstalk models.
-- Trained_models/ — pretrained checkpoints (*.pth) for proximal/distal IK and P↔D crosstalk.
-- Example_data/raw_data/ — sample ROS logs (realtime_log_*.csv).
-- Example_data/process_data/ — example processed/normalized data (*.npz, *.csv).
-- RAL_2025_ML_Hysteresis_Crosstalk_SoftMani_Re1_submitted_main.pdf — submitted paper PDF.
 
-## Getting Started
-1) Create environment  
-   conda env create -f environment.yml  
-   conda activate torchenv
-
-Recommended units:
-- Position: **mm**
-- Pressure: **kPa** or **bar** (choose one and use it consistently)
-- Angle: **rad** or **deg** (choose one and use it consistently)
+| Path | Description |
+|---|---|
+| `environment.yml` | Conda environment for preprocessing, training, and inference |
+| `Data_sep/` | Dataset builders that convert raw logs into processed datasets |
+| `Train_code/` | Training scripts for proximal, distal, and crosstalk-related models |
+| `RSCC_pressuregen/` | RSCC inference / pressure generation scripts |
+| `Trained_models/` | Pretrained model checkpoints |
+| `Example_data/raw_data/` | Example raw sensor logs |
+| `Example_data/process_data/` | Example processed datasets |
+| `RAL_2025_ML_Hysteresis_Crosstalk_SoftMani_Re1_submitted_main.pdf` | Paper PDF |
+| `docs/paper_details.md` | Detailed summary of the paper and how the repository maps to it |
+| `docs/data_format.md` | Detailed raw-data and processed-data specification |
 
 ---
 
-# Sensor, Data, and Model Input Requirements
+## Quick Start
 
-This repository uses raw tracked-sensor logs and pressure commands to build training datasets for the following models:
+### 1. Create the environment
 
-1. **Proximal pressure mapping model**  
-   Predicts proximal chamber pressures `[P1, P2, P3]`
+```bash
+conda env create -f environment.yml
+conda activate torchenv
+```
 
-2. **Distal pressure mapping model**  
-   Predicts distal chamber pressures `[P4, P5, P6]`
+### 2. Prepare data
 
-3. **Proximal-to-distal response model (P2D / crosstalk-related model)**  
-   Predicts distal 2D tip response `[X, Y]` from proximal pressures `[P1, P2, P3]`
+Run the preprocessing scripts in `Data_sep/` to convert raw CSV logs into processed datasets.
 
-4. **Distal-to-proximal response model (D2P / crosstalk-related model, optional)**  
-   If used, this model should predict proximal 2D tip response `[X, Y]` from distal pressures `[P4, P5, P6]`
+Typical outputs include:
+- processed data in `.npz`
+- normalization statistics in `.npz`
+- inspection tables in `.csv`
 
-   ```text
-    Raw CSV (0A, 0B, 0C)
-            │
-            ▼
-    Preprocessing
-    (frame transform + feature extraction)
-            │
-            ▼
-    ┌──────────────────────────┐
-    │ Segment States           │◄───────────────┐
-    │ [s_prox, s_dist]         │                │
-    └─────────────┬────────────┘                │
-                  │                             │
-                  ├──────────────┐              │
-                  ▼              ▼              │
-          Proximal Model     Crosstalk Model (P2D)
-          [P1,P2,P3]         [X,Y] offset (to distal)
-                  │              │
-                  └──────┬───────┘
-                         ▼
-               Compensated Distal Target
-                         │
-                         ▼
-                  Distal Model
-                  [P4,P5,P6]
-                         │
-                         ▼
-               Crosstalk Model (D2P)
-               [X,Y] offset (to proximal)
-                         │
-                         ▼
-               Compensated Proximal Target
-                         │
-                         ▼
-               Update Segment States
-               [s_prox, s_dist]
-                         │
-                         ▼
-                         │
-                         └───────────────┐
-                                         │
-                                         ▼
-                                 ┌───────────────┐
-                                 │               │
-                                 │  (same block) │
-                                 │               │
-                                 └──────▲────────┘
-                                        │
-                                        └──────── back to Segment States
+### 3. Train models
+
+Run the training scripts in `Train_code/` for:
+- proximal pressure mapping
+- distal pressure mapping
+- crosstalk-related models
+
+### 4. Run RSCC pressure generation
+
+Use the scripts in `RSCC_pressuregen/` to generate pressure commands using the trained models.
 
 ---
 
-## 1. Raw data requirement
+## RSCC Control Pipeline
 
-The current preprocessing scripts expect a raw `.csv` log with the following column names.
+```mermaid
+flowchart TD
+    A[Raw CSV: 0A, 0B, 0C] --> B[Preprocessing<br/>frame transform + feature extraction]
+    B --> C[Segment States<br/>s_prox, s_dist]
+    C --> D[Proximal Model<br/>P1, P2, P3]
+    D --> E[P2D Crosstalk<br/>distal offset]
+    E --> F[Compensated Distal Target]
+    F --> G[Distal Model<br/>P4, P5, P6]
+    G --> H[D2P Crosstalk<br/>proximal offset]
+    H --> I[Compensated Proximal Target]
+    I --> C
+```
+
+The RSCC pipeline performs recursive compensation between the proximal and distal segments.  
+Initial pressure commands are estimated by the segment-wise models, crosstalk effects are predicted, and the segment states are updated iteratively.
+
+---
+
+## Data Format
+
+A short summary is given below.  
+For the full specification, see [`docs/data_format.md`](docs/data_format.md).
+
+### Raw log requirement
+
+The preprocessing scripts expect a raw `.csv` log containing:
+- timestamp
+- chamber pressures
+- stiffness-related index
+- three tracked sensor streams with position and quaternion orientation
 
 ### Required columns
 
@@ -105,26 +113,18 @@ The current preprocessing scripts expect a raw `.csv` log with the following col
 |---|---|
 | Time | `time` |
 | Pressure | `p1`, `p2`, `p3`, `p4`, `p5`, `p6` |
+| Index | `ks` |
 | 0A pose | `0A_pos_x`, `0A_pos_y`, `0A_pos_z`, `0A_orient_x`, `0A_orient_y`, `0A_orient_z`, `0A_orient_w` |
 | 0B pose | `0B_pos_x`, `0B_pos_y`, `0B_pos_z`, `0B_orient_x`, `0B_orient_y`, `0B_orient_z`, `0B_orient_w` |
 | 0C pose | `0C_pos_x`, `0C_pos_y`, `0C_pos_z`, `0C_orient_x`, `0C_orient_y`, `0C_orient_z`, `0C_orient_w` |
-
-### Notes
-
-- `time` is the timestamp column
-- `p1` to `p6` are chamber pressures
-- `ks` is the logged stiffness-related index
-- `0A`, `0B`, and `0C` are tracked sensor streams
-- each sensor must provide both position and quaternion orientation
-- keep the raw column names exactly as above so the current scripts can read them directly
 
 ### Example raw row (split view)
 
 **Time and pressure**
 
-| time | p1 | p2 | p3 | p4 | p5 | p6 |
-|---:|---:|---:|---:|---:|---:|---:|
-| 1762606570 | 0 | 0 | 0 | 0 | 0 | 0 |
+| time | p1 | p2 | p3 | p4 | p5 | p6 | ks |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1762606570 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 
 **Sensor 0A**
 
@@ -146,357 +146,86 @@ The current preprocessing scripts expect a raw `.csv` log with the following col
 
 ---
 
-## 2. Sensor placement requirement
+## Model Input Summary
 
-To reproduce the current preprocessing pipeline, the raw log must contain:
-
-- one reference sensor
-- one proximal segment-end sensor
-- one distal segment-end sensor
-
-In the current scripts, these are read from the three raw tracked streams `0A`, `0B`, and `0C`, then internally transformed into local features.
-
-For the downstream control pipeline, the important states are the two segment-end tip states:
-
-- Base
-- proximal segment end
-- distal segment end
-
-<img width="1460" height="717" alt="image" src="https://github.com/user-attachments/assets/34a81a6a-a992-4b83-9ba4-bfaeab167b14" />
-
----
-
-## 3. Preprocessing requirement
-
-The models are not trained directly from all raw rows.
-
-The preprocessing scripts first:
-
-1. load the raw log
-2. detect rows around pressure changes
-3. shift the selected rows by `-2` samples to account for valve delay
-4. estimate zero-reference poses from zero-pressure regions
-5. transform the raw sensor poses into local segment features
-6. save processed datasets as `.npz`, normalization statistics as `.npz`, and inspection tables as `.csv`
-
----
-
-## 4. Proximal pressure mapping model
-
-### Purpose
-
-Predict proximal chamber pressures `[P1, P2, P3]`.
-
-### Raw data trigger
-
-Rows are selected when any of the proximal pressures changes:
+### Proximal pressure model
 
 ```text
-p1, p2, or p3
+[PX, PY, cosP, sinP, dPX, dPY, dcosP, dsinP] -> [P1, P2, P3]
 ```
 
-### Zero-reference region
-
-The zero-reference is estimated from rows where:
+### Distal pressure model
 
 ```text
-p1 = p2 = p3 = 0
+[PX, PY, cosP, sinP, dPX, dPY, dcosP, dsinP] -> [P4, P5, P6]
 ```
 
-### Training input
-
-The current preprocessing script builds an 8-dimensional input vector:
-
-```text
-[PX, PY, cosP, sinP, dPX, dPY, dcosP, dsinP]
-```
-
-### Feature meaning
-
-- `PX`, `PY` = previous proximal local tip features
-- `cosP`, `sinP` = proximal bending-plane representation
-- `dPX`, `dPY`, `dcosP`, `dsinP` = change from previous step
-
-### Training target
-
-```text
-[P1, P2, P3]
-```
-
-### Saved processed CSV format
-
-```text
-PX, PY, cosP, sinP, dPX, dPY, dcosP, dsinP, P1, P2, P3
-```
-
-### Input/output shape
-
-```text
-X.shape = [N, 8]
-Y.shape = [N, 3]
-```
-
-### Deployment input
-
-```text
-[PX, PY, cosP, sinP, dPX, dPY, dcosP, dsinP]
-```
-
-### Deployment output
-
-```text
-[P1, P2, P3]
-```
-
----
-
-## 5. Distal pressure mapping model
-
-### Purpose
-
-Predict distal chamber pressures `[P4, P5, P6]`.
-
-### Raw data trigger
-
-Rows are selected when any of the distal pressures changes:
-
-```text
-p4, p5, or p6
-```
-
-### Zero-reference region
-
-The zero-reference is estimated from rows where:
-
-```text
-p4 = p5 = p6 = 0
-```
-
-### Training input
-
-The distal preprocessing script builds the same 8-dimensional input structure:
-
-```text
-[PX, PY, cosP, sinP, dPX, dPY, dcosP, dsinP]
-```
-
-### Feature meaning
-
-- `PX`, `PY` = previous distal local tip features
-- `cosP`, `sinP` = distal bending-plane representation
-- `dPX`, `dPY`, `dcosP`, `dsinP` = change from previous step
-
-### Training target
-
-```text
-[P4, P5, P6]
-```
-
-### Saved processed CSV format
-
-```text
-PX, PY, cosP, sinP, dPX, dPY, dcosP, dsinP, P4, P5, P6
-```
-
-### Input/output shape
-
-```text
-X.shape = [N, 8]
-Y.shape = [N, 3]
-```
-
-### Deployment input
-
-```text
-[PX, PY, cosP, sinP, dPX, dPY, dcosP, dsinP]
-```
-
-### Deployment output
-
-```text
-[P4, P5, P6]
-```
-
----
-
-## 6. Proximal-to-distal response model (P2D / crosstalk-related model)
-<img width="1863" height="781" alt="image" src="https://github.com/user-attachments/assets/52c4c4cd-a4d9-4f17-b250-d583fb6011bd" />
-
-### Purpose
-
-Model the distal tip response caused by proximal actuation.
-
-### Current implementation
-
-In the current uploaded preprocessing script, this model is built as:
+### P2D response model
 
 ```text
 [P1, P2, P3] -> [X, Y]
 ```
 
-This means the current `P2D` dataset is a pressure-to-distal-response mapping, rather than a full state-based crosstalk model.
-
-### Raw data trigger
-
-The current `P2D` preprocessing script uses proximal-pressure change events:
-
-```text
-p1, p2, or p3
-```
-
-### Training input
-
-```text
-[P1, P2, P3]
-```
-
-### Training target
-
-```text
-[X, Y]
-```
-
-where `[X, Y]` is the processed local distal 2D tip response.
-
-### Saved processed CSV format
-
-```text
-P1, P2, P3, X, Y
-```
-
-### Input/output shape
-
-```text
-X.shape = [N, 3]
-Y.shape = [N, 2]
-```
-
-### Deployment input
-
-```text
-[P1, P2, P3]
-```
-
-### Deployment output
-
-```text
-[X, Y]
-```
-
----
-
-## 7. Distal-to-proximal response model (D2P / crosstalk-related model, optional)
-
-### Purpose
-
-Model the proximal tip response caused by distal actuation.
-
-### Note
-
-A `D2P` preprocessing script is not included in the currently uploaded files.  
-If a symmetric reverse-direction crosstalk model is needed, the recommended dataset format is:
+### D2P response model
 
 ```text
 [P4, P5, P6] -> [X, Y]
 ```
 
-where `[X, Y]` represents the processed local proximal 2D tip response.
+---
 
-### Recommended raw data trigger
-
-```text
-p4, p5, or p6
-```
-
-### Recommended training input
+## Example Workflow
 
 ```text
-[P4, P5, P6]
-```
-
-### Recommended training target
-
-```text
-[X, Y]
-```
-
-### Recommended saved processed CSV format
-
-```text
-P4, P5, P6, X, Y
-```
-
-### Recommended input/output shape
-
-```text
-X.shape = [N, 3]
-Y.shape = [N, 2]
-```
-
-### Recommended deployment input
-
-```text
-[P4, P5, P6]
-```
-
-### Recommended deployment output
-
-```text
-[X, Y]
+Raw CSV
+→ Data_sep preprocessing
+→ processed .npz / .csv
+→ Train_code model training
+→ Trained_models checkpoints
+→ RSCC_pressuregen inference
 ```
 
 ---
 
-## 8. RSCC pipeline requirement
-<img width="1933" height="740" alt="image" src="https://github.com/user-attachments/assets/dbdb34bc-2853-4904-90ee-6c95988465a3" />
+## Citation
 
-The RSCC pipeline uses the segment-end states together with the trained models.
+If you use this repository, please cite both the code repository and the accompanying paper.
 
-### Minimum sensing requirement
+### Repository citation
 
-- one reference sensor
-- one proximal segment-end sensor
-- one distal segment-end sensor
+A `CITATION.cff` file is provided in the repository root so GitHub can display a citation entry automatically.
 
-### Minimum model requirement
+### Paper citation
 
-At minimum, the current logic supports:
+Please cite the accompanying manuscript:
 
-1. proximal pressure mapping model
-
-   ```text
-   [PX, PY, cosP, sinP, dPX, dPY, dcosP, dsinP] -> [P1, P2, P3]
-   ```
-
-2. distal pressure mapping model
-
-   ```text
-   [PX, PY, cosP, sinP, dPX, dPY, dcosP, dsinP] -> [P4, P5, P6]
-   ```
-
-3. proximal-to-distal response model
-
-   ```text
-   [P1, P2, P3] -> [X, Y]
-   ```
-
-Optional:
-
-4. distal-to-proximal response model
-
-   ```text
-   [P4, P5, P6] -> [X, Y]
-   ```
-
-### State representation
-
-For downstream control, the robot state is represented by the two segment-end tip states:
-
-```text
-s_prox = proximal segment-end tip state
-s_dist = distal segment-end tip state
+```bibtex
+@misc{korn_soft_recursive,
+  title        = {Data-Efficient Modeling of Hysteresis and Crosstalk for Inverse Kinematics of Soft Continuum Robots},
+  author       = {Korn Borvornatanajanya and collaborators},
+  year         = {2026},
+  note         = {RAL submission / manuscript included in repository},
+}
 ```
 
-These states are transformed into the required model input features before inference.
+Update the BibTeX entry above once the final publication details, pages, and DOI are available.
 
 ---
+
+## Paper and Documentation
+
+- Paper PDF: `RAL_2025_ML_Hysteresis_Crosstalk_SoftMani_Re1_submitted_main.pdf`
+- Detailed paper notes: [`docs/paper_details.md`](docs/paper_details.md)
+- Detailed data specification: [`docs/data_format.md`](docs/data_format.md)
+
+---
+
+## License
+
+This project is released under the MIT License. See [`LICENSE`](LICENSE).
+
+---
+
+## Contact
+
+For questions related to the repository, models, or paper, please open an issue or contact the repository author.
