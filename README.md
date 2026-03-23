@@ -43,6 +43,56 @@ This repository uses raw tracked-sensor logs and pressure commands to build trai
 4. **Distal-to-proximal response model (D2P / crosstalk-related model, optional)**  
    If used, this model should predict proximal 2D tip response `[X, Y]` from distal pressures `[P4, P5, P6]`
 
+   ```text
+Raw CSV (0A, 0B, 0C)
+        │
+        ▼
+Preprocessing
+(frame transform + feature extraction)
+        │
+        ▼
+┌──────────────────────────┐
+│ Segment States           │◄───────────────┐
+│ [s_prox, s_dist]         │                │
+└─────────────┬────────────┘                │
+              │                             │
+              ├──────────────┐              │
+              ▼              ▼              │
+      Proximal Model     Crosstalk Model (P2D)
+      [P1,P2,P3]         [X,Y] offset (to distal)
+              │              │
+              └──────┬───────┘
+                     ▼
+           Compensated Distal Target
+                     │
+                     ▼
+              Distal Model
+              [P4,P5,P6]
+                     │
+                     ▼
+           Crosstalk Model (D2P)
+           [X,Y] offset (to proximal)
+                     │
+                     ▼
+           Compensated Proximal Target
+                     │
+                     ▼
+           Update Segment States
+           [s_prox, s_dist]
+                     │
+                     ▼
+                     │
+                     └───────────────┐
+                                     │
+                                     ▼
+                             ┌───────────────┐
+                             │               │
+                             │  (same block) │
+                             │               │
+                             └──────▲────────┘
+                                    │
+                                    └──────── back to Segment States
+
 ---
 
 ## 1. Raw data requirement
