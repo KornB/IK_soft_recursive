@@ -96,24 +96,6 @@ This repository uses raw tracked-sensor logs and pressure commands to build trai
 
 ---
 
-# Sensor, Data, and Model Input Requirements
-
-This repository uses raw tracked-sensor logs and pressure commands to build training datasets for the following models:
-
-1. **Proximal pressure mapping model**  
-   Predicts proximal chamber pressures `[P1, P2, P3]`
-
-2. **Distal pressure mapping model**  
-   Predicts distal chamber pressures `[P4, P5, P6]`
-
-3. **Proximal-to-distal response model (P2D / crosstalk-related model)**  
-   Predicts distal 2D tip response `[X, Y]` from proximal pressures `[P1, P2, P3]`
-
-4. **Distal-to-proximal response model (D2P / crosstalk-related model, optional)**  
-   If used, this model should predict proximal 2D tip response `[X, Y]` from distal pressures `[P4, P5, P6]`
-
----
-
 ## 1. Raw data requirement
 
 The current preprocessing scripts expect a raw `.csv` log with the following column names.
