@@ -68,11 +68,31 @@ The current preprocessing scripts expect a raw `.csv` log with the following col
 - each sensor must provide both position and quaternion orientation
 - keep the raw column names exactly as above so the current scripts can read them directly
 
-### Example raw row
+### Example raw row (split view)
 
-| time | p1 | p2 | p3 | p4 | p5 | p6 | 0A_pos_x | 0A_pos_y | 0A_pos_z | 0B_pos_x | 0B_pos_y | 0B_pos_z | 0C_pos_x | 0C_pos_y | 0C_pos_z |
-|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 1762606570.41 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 15.3788 | 29.1995 | -210.7228 | -5.9536 | -49.4013 | -217.9330 | 14.5586 | 3.9051 | -217.2526 |
+**Time and pressure**
+
+| time | p1 | p2 | p3 | p4 | p5 | p6 |
+|---:|---:|---:|---:|---:|---:|---:|
+| 1762606570 | 0 | 0 | 0 | 0 | 0 | 0 |
+
+**Sensor 0A**
+
+| 0A_pos_x | 0A_pos_y | 0A_pos_z | 0A_orient_x | 0A_orient_y | 0A_orient_z | 0A_orient_w |
+|---:|---:|---:|---:|---:|---:|---:|
+| 15.3788 | 29.1995 | -210.7228 | -0.6118 | 0.0277 | 0.0000 | 0.7905 |
+
+**Sensor 0B**
+
+| 0B_pos_x | 0B_pos_y | 0B_pos_z | 0B_orient_x | 0B_orient_y | 0B_orient_z | 0B_orient_w |
+|---:|---:|---:|---:|---:|---:|---:|
+| -5.9536 | -49.4013 | -217.9330 | -0.7429 | 0.0555 | 0.0822 | 0.6620 |
+
+**Sensor 0C**
+
+| 0C_pos_x | 0C_pos_y | 0C_pos_z | 0C_orient_x | 0C_orient_y | 0C_orient_z | 0C_orient_w |
+|---:|---:|---:|---:|---:|---:|---:|
+| 14.5586 | 3.9051 | -217.2526 | -0.6361 | -0.0203 | 0.0000 | 0.7713 |
 
 ---
 
