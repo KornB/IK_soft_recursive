@@ -43,7 +43,6 @@ This repository uses raw tracked-sensor logs and pressure commands to build trai
 4. **Distal-to-proximal response model (D2P / crosstalk-related model, optional)**  
    If used, this model should predict proximal 2D tip response `[X, Y]` from distal pressures `[P4, P5, P6]`
 
-   ```text
    
     Raw CSV (0A, 0B, 0C)
         ↓
