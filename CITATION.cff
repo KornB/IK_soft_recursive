@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use this repository, please cite the repository and the accompanying manuscript."
+title: "IK Soft Recursive"
+type: software
+authors:
+  - family-names: "Borvornatanajanya"
+    given-names: "Korn"
+repository-code: "https://github.com/KornB/IK_soft_recursive"
+license: "MIT"
+keywords:
+  - soft robotics
+  - inverse kinematics
+  - crosstalk compensation
+  - hysteresis modeling
+  - RSCC
+preferred-citation:
+  type: article
+  authors:
+    - family-names: "Borvornatanajanya"
+      given-names: "Korn"
+  title: "Data-Efficient Modeling of Hysteresis and Crosstalk for Inverse Kinematics of Soft Continuum Robots"
+  year: 2026
+  notes: "RAL submission / manuscript included in repository"
