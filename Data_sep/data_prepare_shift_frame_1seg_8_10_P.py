@@ -198,14 +198,14 @@ def build_shifted_YZ_features_dataset(
 
     csvpath = os.path.join(save_dir,file_save_csv)
     df_combined.to_csv(csvpath, index=False)
-    print("Saved inputs and targets to inputs_targets_datasetD.csv")
+    print("Saved inputs and targets")
     np.savez(norm_npz, input_mean=input_mean, input_std=input_std,
              target_mean=target_mean, target_std=target_std)
     print(f"Saved normalization stats to {norm_npz}")
 
 if __name__ == "__main__":
-    output_dir = 'exp_data'
-    save_dir = 'data_sep'
+    output_dir = 'Example_data/raw_data'
+    save_dir = 'Example_data/process_data'
     os.makedirs(output_dir, exist_ok=True)
     filepath = os.path.join(output_dir, file_name)
     zeropath = os.path.join(output_dir, file_zero)
