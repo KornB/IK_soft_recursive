@@ -108,10 +108,11 @@ In the current scripts, these are read from the three raw tracked streams `0A`, 
 
 For the downstream control pipeline, the important states are the two segment-end tip states:
 
+- Base
 - proximal segment end
 - distal segment end
 
-<img width="1445" height="696" alt="image" src="https://github.com/user-attachments/assets/6dcf13d4-b652-4377-a799-28568b45c422" />
+<img width="1460" height="717" alt="image" src="https://github.com/user-attachments/assets/34a81a6a-a992-4b83-9ba4-bfaeab167b14" />
 
 ---
 
