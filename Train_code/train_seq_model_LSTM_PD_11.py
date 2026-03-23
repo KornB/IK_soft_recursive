@@ -7,8 +7,8 @@ from sklearn.model_selection import train_test_split
 import csv
 
 import os
-output_dir = 'model'
-data_dir = 'data_sep'
+output_dir = 'Trained_models'
+data_dir = 'Example_data/process_data'
 model_name = 'LSTM_PD_4_128_11_1000'
 os.makedirs(output_dir, exist_ok=True)
 # === Config ===c:\Users\user\Desktop\two_segment\usemodel\test_seq_path_2segments_D.py
