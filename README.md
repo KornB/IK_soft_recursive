@@ -78,179 +78,455 @@ Recommended units:
 
 ---
 
-## 2. Raw Sensor Data File Format
+# Sensor, Data, and Model Input Requirements
 
-Raw recorded data should be stored in `.xlsx` or `.csv` format. Each row should correspond to one synchronized time sample.
+This repository uses raw tracked-sensor logs and pressure commands to build training datasets for the following models:
 
-## 2.1 Minimum required columns
-For a two-segment system, the raw file should contain:
+1. **Proximal pressure mapping model**  
+   Predicts proximal chamber pressures `[P1, P2, P3]`
 
-| Column name | Description |
-|---|---|
-| `t` | Timestamp |
-| `seg1_x` | X position of Segment 1 endpoint |
-| `seg1_y` | Y position of Segment 1 endpoint |
-| `seg1_z` | Z position of Segment 1 endpoint |
-| `seg2_x` | X position of Segment 2 endpoint |
-| `seg2_y` | Y position of Segment 2 endpoint |
-| `seg2_z` | Z position of Segment 2 endpoint |
-| `p1` | Chamber pressure 1 |
-| `p2` | Chamber pressure 2 |
-| `p3` | Chamber pressure 3 |
-| `p4` | Chamber pressure 4 |
-| `p5` | Chamber pressure 5 |
-| `p6` | Chamber pressure 6 |
+2. **Distal pressure mapping model**  
+   Predicts distal chamber pressures `[P4, P5, P6]`
 
-If the robot has a different number of chambers, replace the pressure columns accordingly.
+3. **Proximal-to-distal response model (P2D / crosstalk-related model)**  
+   Predicts distal 2D tip response `[X, Y]` from proximal pressures `[P1, P2, P3]`
 
-## 2.2 Example raw data table
-
-| t | seg1_x | seg1_y | seg1_z | seg2_x | seg2_y | seg2_z | p1 | p2 | p3 | p4 | p5 | p6 |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 0.00 | 1.2 | 0.4 | 45.1 | 2.8 | 0.7 | 88.5 | 20 | 18 | 25 | 30 | 28 | 31 |
-| 0.10 | 1.4 | 0.5 | 45.4 | 3.0 | 0.8 | 88.9 | 21 | 18 | 24 | 30 | 29 | 31 |
+4. **Distal-to-proximal response model (D2P / crosstalk-related model, optional)**  
+   If used, this model should predict proximal 2D tip response `[X, Y]` from distal pressures `[P4, P5, P6]`
 
 ---
 
-## 3. Training Input Format
+## 1. Raw data requirement
 
-The raw sensor data are not fed directly into the models. They must first be converted into model-specific training inputs.
+The current preprocessing scripts expect a raw `.csv` log with the following column names.
+
+### Required columns
+
+```text
+time
+p1, p2, p3, p4, p5, p6
+ks
+
+0A_pos_x, 0A_pos_y, 0A_pos_z
+0A_orient_x, 0A_orient_y, 0A_orient_z, 0A_orient_w
+
+0B_pos_x, 0B_pos_y, 0B_pos_z
+0B_orient_x, 0B_orient_y, 0B_orient_z, 0B_orient_w
+
+0C_pos_x, 0C_pos_y, 0C_pos_z
+0C_orient_x, 0C_orient_y, 0C_orient_z, 0C_orient_w
+Notes
+time is the timestamp column
+p1 to p6 are chamber pressures
+ks is the logged stiffness-related index
+0A, 0B, and 0C are tracked sensor streams
+each sensor must provide both position and quaternion orientation
+keep the raw column names exactly as above so the current scripts can read them directly
+Example raw row
+time,p1,p2,p3,p4,p5,p6,ks,0A_pos_x,0A_pos_y,0A_pos_z,0A_orient_x,0A_orient_y,0A_orient_z,0A_orient_w,...
+1762606570.41,0,0,0,0,0,0,0,15.3788,29.1995,-210.7228,...
+2. Sensor placement requirement
+
+To reproduce the current preprocessing pipeline, the raw log must contain:
+
+one reference sensor
+one proximal segment-end sensor
+one distal segment-end sensor
+
+In the current scripts, these are read from the three raw tracked streams 0A, 0B, and 0C, then internally transformed into local features.
+
+For the downstream control pipeline, the important states are the two segment-end tip states:
+
+proximal segment end
+distal segment end
+3. Preprocessing requirement
+
+The models are not trained directly from all raw rows.
+
+The preprocessing scripts first:
+
+load the raw log
+detect rows around pressure changes
+shift the selected rows by -2 samples to account for valve delay
+estimate zero-reference poses from zero-pressure regions
+transform the raw sensor poses into local segment features
+save processed datasets as .npz, normalization stats as .npz, and inspection tables as .csv
+4. Proximal pressure mapping model
+Purpose
+
+Predict proximal chamber pressures [P1, P2, P3].
+
+Raw data trigger
+
+Rows are selected when any of the proximal pressures changes:
+
+p1, p2, or p3
+Training input
+
+The current preprocessing script builds an 8-dimensional input vector:
+
+[PX, PY, cosP, sinP, dPX, dPY, dcosP, dsinP]
+Feature meaning
+PX, PY = previous proximal local tip features
+cosP, sinP = proximal bending-plane representation
+dPX, dPY, dcosP, dsinP = change from previous step
+Training target
+[P1, P2, P3]
+Saved processed CSV format
+PX, PY, cosP, sinP, dPX, dPY, dcosP, dsinP, P1, P2, P3
+Input/output shape
+X.shape = [N, 8]
+Y.shape = [N, 3]
+Deployment input
+[PX, PY, cosP, sinP, dPX, dPY, dcosP, dsinP]
+Deployment output
+[P1, P2, P3]
+5. Distal pressure mapping model
+Purpose
+
+Predict distal chamber pressures [P4, P5, P6].
+
+Raw data trigger
+
+Rows are selected when any of the distal pressures changes:
+
+p4, p5, or p6
+Training input
+
+The distal model uses the same 8-dimensional input structure:
+
+[PX, PY, cosP, sinP, dPX, dPY, dcosP, dsinP]
+Feature meaning
+PX, PY = previous distal local tip features
+cosP, sinP = distal bending-plane representation
+dPX, dPY, dcosP, dsinP = change from previous step
+Training target
+[P4, P5, P6]
+Saved processed CSV format
+PX, PY, cosP, sinP, dPX, dPY, dcosP, dsinP, P4, P5, P6
+Input/output shape
+X.shape = [N, 8]
+Y.shape = [N, 3]
+Deployment input
+[PX, PY, cosP, sinP, dPX, dPY, dcosP, dsinP]
+Deployment output
+[P4, P5, P6]
+6. Proximal-to-distal response model (P2D / crosstalk-related model)
+Purpose
+
+Model the distal tip response caused by proximal actuation.
+
+Current implementation
+
+In the current uploaded preprocessing script, this model is built as:
+
+[P1, P2, P3] -> [X, Y]
+
+This means the present P2D dataset is a pressure-to-distal-response mapping, rather than a full state-based crosstalk model.
+
+Training input
+[P1, P2, P3]
+Training target
+[X, Y]
+
+where [X, Y] is the processed local distal 2D tip response.
+
+Saved processed CSV format
+P1, P2, P3, X, Y
+Input/output shape
+X.shape = [N, 3]
+Y.shape = [N, 2]
+Deployment input
+[P1, P2, P3]
+Deployment output
+[X, Y]
+7. Distal-to-proximal response model (D2P / crosstalk-related model, optional)
+Purpose
+
+Model the proximal tip response caused by distal actuation.
+
+Note
+
+A D2P preprocessing script is not included in the currently uploaded files.
+If a symmetric reverse-direction crosstalk model is needed, the recommended dataset format is:
+
+[P4, P5, P6] -> [X, Y]
+
+where [X, Y] represents the processed local proximal 2D tip response.
+
+Recommended training input
+[P4, P5, P6]
+Recommended training target
+[X, Y]
+Recommended saved processed CSV format
+P4, P5, P6, X, Y
+Recommended input/output shape
+X.shape = [N, 3]
+Y.shape = [N, 2]
+Recommended deployment input
+[P4, P5, P6]
+Recommended deployment output
+[X, Y]
+8. RSCC pipeline requirement
+
+The RSCC pipeline uses the segment-end states together with the trained models.
+
+Minimum sensing requirement
+one reference sensor
+one proximal segment-end sensor
+one distal segment-end sensor
+Minimum model requirement
+
+At minimum, the current logic supports:
+
+proximal pressure mapping model
+
+[PX, PY, cosP, sinP, dPX, dPY, dcosP, dsinP] -> [P1, P2, P3]
+
+distal pressure mapping model
+
+[PX, PY, cosP, sinP, dPX, dPY, dcosP, dsinP] -> [P4, P5, P6]
+
+proximal-to-distal response model
+
+[P1, P2, P3] -> [X, Y]
+
+Optional:
+4. distal-to-proximal response model
+
+[P4, P5, P6] -> [X, Y]
+State representation
+
+For downstream control, the robot state is represented by the two segment-end tip states:
+
+s_prox = proximal segment-end tip state
+s_dist = distal segment-end tip state
+
+These states are transformed into the required model input features before inference.# Sensor, Data, and Model Input Requirements
+
+This repository uses raw tracked-sensor logs and pressure commands to build training datasets for the following models:
+
+1. **Proximal pressure mapping model**  
+   Predicts proximal chamber pressures `[P1, P2, P3]`
+
+2. **Distal pressure mapping model**  
+   Predicts distal chamber pressures `[P4, P5, P6]`
+
+3. **Proximal-to-distal response model (P2D / crosstalk-related model)**  
+   Predicts distal 2D tip response `[X, Y]` from proximal pressures `[P1, P2, P3]`
+
+4. **Distal-to-proximal response model (D2P / crosstalk-related model, optional)**  
+   If used, this model should predict proximal 2D tip response `[X, Y]` from distal pressures `[P4, P5, P6]`
 
 ---
 
-## 3.1 Pressure Mapping Model
+## 1. Raw data requirement
 
-### Purpose
-This model predicts the pressure command of a segment from its state or target motion features.
+The current preprocessing scripts expect a raw `.csv` log with the following column names.
 
-### Typical training input
-The exact feature set may vary by experiment, but the input generally contains:
-- previous tip state
-- previous pressure
-- current or target tip state
-- state difference terms
+### Required columns
 
-A typical input vector for one segment may include:
+```text
+time
+p1, p2, p3, p4, p5, p6
+ks
 
-| Feature | Description |
-|---|---|
-| `x_(t-1), y_(t-1), z_(t-1)` | Previous tip position |
-| `x_t, y_t, z_t` | Current or target tip position |
-| `dx, dy, dz` | Position increment |
-| `p_(t-1)` | Previous pressure command |
-| optional bending features | e.g. `theta`, `phi`, `dtheta`, `dphi`, `cos(phi)`, `sin(phi)` |
+0A_pos_x, 0A_pos_y, 0A_pos_z
+0A_orient_x, 0A_orient_y, 0A_orient_z, 0A_orient_w
 
-### Typical training target
-| Target | Description |
-|---|---|
-| `p_t` | Pressure command at current time step |
+0B_pos_x, 0B_pos_y, 0B_pos_z
+0B_orient_x, 0B_orient_y, 0B_orient_z, 0B_orient_w
 
-### Example processed training row
-| x_prev | y_prev | z_prev | x_tgt | y_tgt | z_tgt | dx | dy | dz | p1_prev | p2_prev | p3_prev | p1_t | p2_t | p3_t |
-|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 1.2 | 0.4 | 45.1 | 1.4 | 0.5 | 45.4 | 0.2 | 0.1 | 0.3 | 20 | 18 | 25 | 21 | 18 | 24 |
+0C_pos_x, 0C_pos_y, 0C_pos_z
+0C_orient_x, 0C_orient_y, 0C_orient_z, 0C_orient_w
+Notes
+time is the timestamp column
+p1 to p6 are chamber pressures
+ks is the logged stiffness-related index
+0A, 0B, and 0C are tracked sensor streams
+each sensor must provide both position and quaternion orientation
+keep the raw column names exactly as above so the current scripts can read them directly
+Example raw row
+time,p1,p2,p3,p4,p5,p6,ks,0A_pos_x,0A_pos_y,0A_pos_z,0A_orient_x,0A_orient_y,0A_orient_z,0A_orient_w,...
+1762606570.41,0,0,0,0,0,0,0,15.3788,29.1995,-210.7228,...
+2. Sensor placement requirement
 
-If using sequence models such as LSTM or Transformer, multiple consecutive rows are stacked into a window of length `m`.
+To reproduce the current preprocessing pipeline, the raw log must contain:
 
-### Sequence input example
-For time window length `m`, the training input shape is typically:
+one reference sensor
+one proximal segment-end sensor
+one distal segment-end sensor
 
-- `X.shape = [N, m, F]`
-- `Y.shape = [N, O]` or `[N, m, O]`
+In the current scripts, these are read from the three raw tracked streams 0A, 0B, and 0C, then internally transformed into local features.
 
-where:
-- `N` = number of training samples
-- `m` = sequence length
-- `F` = number of input features
-- `O` = number of output pressure channels
+For the downstream control pipeline, the important states are the two segment-end tip states:
 
----
+proximal segment end
+distal segment end
+3. Preprocessing requirement
 
-## 3.2 Crosstalk Model
+The models are not trained directly from all raw rows.
 
-### Purpose
-This model predicts the offset or disturbance on one segment caused by the actuation or deformation of another segment.
+The preprocessing scripts first:
 
-### Typical training input
-The input usually contains:
-- state of the influencing segment
-- state of the affected segment
-- optionally pressure of the influencing segment
-- optionally relative geometric features
+load the raw log
+detect rows around pressure changes
+shift the selected rows by -2 samples to account for valve delay
+estimate zero-reference poses from zero-pressure regions
+transform the raw sensor poses into local segment features
+save processed datasets as .npz, normalization stats as .npz, and inspection tables as .csv
+4. Proximal pressure mapping model
+Purpose
 
-A typical crosstalk input may include:
-- proximal segment endpoint position
-- distal segment endpoint position
-- commanded pressure of the proximal segment
-- relative displacement between segment endpoints
+Predict proximal chamber pressures [P1, P2, P3].
 
-### Typical training target
-The target is the crosstalk offset, for example:
-- position offset of the distal endpoint
-- equivalent correction term for the inverse model
-- compensated target shift
+Raw data trigger
 
-### Example processed features
-| Feature | Description |
-|---|---|
-| `seg1_x, seg1_y, seg1_z` | Endpoint of Segment 1 |
-| `seg2_x, seg2_y, seg2_z` | Endpoint of Segment 2 |
-| `rel_x, rel_y, rel_z` | Relative position |
-| `p_seg1` | Pressure applied to Segment 1 |
-| `eta` or `delta_x, delta_y, delta_z` | Crosstalk target |
+Rows are selected when any of the proximal pressures changes:
 
----
+p1, p2, or p3
+Training input
 
-## 4. Deployment Input Format
+The current preprocessing script builds an 8-dimensional input vector:
 
-During deployment, the input format is different from offline training because only currently available measurements and desired target states can be used.
+[PX, PY, cosP, sinP, dPX, dPY, dcosP, dsinP]
+Feature meaning
+PX, PY = previous proximal local tip features
+cosP, sinP = proximal bending-plane representation
+dPX, dPY, dcosP, dsinP = change from previous step
+Training target
+[P1, P2, P3]
+Saved processed CSV format
+PX, PY, cosP, sinP, dPX, dPY, dcosP, dsinP, P1, P2, P3
+Input/output shape
+X.shape = [N, 8]
+Y.shape = [N, 3]
+Deployment input
+[PX, PY, cosP, sinP, dPX, dPY, dcosP, dsinP]
+Deployment output
+[P1, P2, P3]
+5. Distal pressure mapping model
+Purpose
 
----
+Predict distal chamber pressures [P4, P5, P6].
 
-## 4.1 Pressure Mapping Model for deployment
+Raw data trigger
 
-### Required inputs
-At each control step, the pressure mapping model typically requires:
-- previous measured or estimated tip state
-- desired next tip state
-- previous pressure command
-- derived motion features
+Rows are selected when any of the distal pressures changes:
 
-### Minimal deployment input example
-| Input | Description |
-|---|---|
-| `x_prev, y_prev, z_prev` | Previous measured tip position |
-| `x_des, y_des, z_des` | Desired next tip position |
-| `dx, dy, dz` | Desired increment |
-| `p_prev` | Previous commanded pressure |
+p4, p5, or p6
+Training input
 
-### Output
-| Output | Description |
-|---|---|
-| `p_cmd` | New chamber pressure command |
+The distal model uses the same 8-dimensional input structure:
 
----
+[PX, PY, cosP, sinP, dPX, dPY, dcosP, dsinP]
+Feature meaning
+PX, PY = previous distal local tip features
+cosP, sinP = distal bending-plane representation
+dPX, dPY, dcosP, dsinP = change from previous step
+Training target
+[P4, P5, P6]
+Saved processed CSV format
+PX, PY, cosP, sinP, dPX, dPY, dcosP, dsinP, P4, P5, P6
+Input/output shape
+X.shape = [N, 8]
+Y.shape = [N, 3]
+Deployment input
+[PX, PY, cosP, sinP, dPX, dPY, dcosP, dsinP]
+Deployment output
+[P4, P5, P6]
+6. Proximal-to-distal response model (P2D / crosstalk-related model)
+Purpose
 
-## 4.2 Crosstalk Model for deployment
+Model the distal tip response caused by proximal actuation.
 
-### Required inputs
-The crosstalk model requires the currently available state of the segment that induces coupling, and the current or desired state of the affected segment.
+Current implementation
 
-### Minimal deployment input example
-| Input | Description |
-|---|---|
-| `seg1_tip` | Current endpoint of Segment 1 |
-| `seg2_tip` | Current or desired endpoint of Segment 2 |
-| `p_seg1` | Current or next pressure of Segment 1 |
+In the current uploaded preprocessing script, this model is built as:
 
-### Output
-| Output | Description |
-|---|---|
-| `crosstalk_offset` | Predicted offset caused by inter-segment coupling |
+[P1, P2, P3] -> [X, Y]
 
-This output is then used to compensate the target passed to the downstream segment model.
+This means the present P2D dataset is a pressure-to-distal-response mapping, rather than a full state-based crosstalk model.
 
----
+Training input
+[P1, P2, P3]
+Training target
+[X, Y]
+
+where [X, Y] is the processed local distal 2D tip response.
+
+Saved processed CSV format
+P1, P2, P3, X, Y
+Input/output shape
+X.shape = [N, 3]
+Y.shape = [N, 2]
+Deployment input
+[P1, P2, P3]
+Deployment output
+[X, Y]
+7. Distal-to-proximal response model (D2P / crosstalk-related model, optional)
+Purpose
+
+Model the proximal tip response caused by distal actuation.
+
+Note
+
+A D2P preprocessing script is not included in the currently uploaded files.
+If a symmetric reverse-direction crosstalk model is needed, the recommended dataset format is:
+
+[P4, P5, P6] -> [X, Y]
+
+where [X, Y] represents the processed local proximal 2D tip response.
+
+Recommended training input
+[P4, P5, P6]
+Recommended training target
+[X, Y]
+Recommended saved processed CSV format
+P4, P5, P6, X, Y
+Recommended input/output shape
+X.shape = [N, 3]
+Y.shape = [N, 2]
+Recommended deployment input
+[P4, P5, P6]
+Recommended deployment output
+[X, Y]
+8. RSCC pipeline requirement
+
+The RSCC pipeline uses the segment-end states together with the trained models.
+
+Minimum sensing requirement
+one reference sensor
+one proximal segment-end sensor
+one distal segment-end sensor
+Minimum model requirement
+
+At minimum, the current logic supports:
+
+proximal pressure mapping model
+
+[PX, PY, cosP, sinP, dPX, dPY, dcosP, dsinP] -> [P1, P2, P3]
+
+distal pressure mapping model
+
+[PX, PY, cosP, sinP, dPX, dPY, dcosP, dsinP] -> [P4, P5, P6]
+
+proximal-to-distal response model
+
+[P1, P2, P3] -> [X, Y]
+
+Optional:
+4. distal-to-proximal response model
+
+[P4, P5, P6] -> [X, Y]
+State representation
+
+For downstream control, the robot state is represented by the two segment-end tip states:
+
+s_prox = proximal segment-end tip state
+s_dist = distal segment-end tip state
+
+These states are transformed into the required model input features before inference.
 
 ## 5. RSCC Pipeline Requirements
 
