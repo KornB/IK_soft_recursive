@@ -204,8 +204,8 @@ def build_shifted_YZ_features_dataset(
     print(f"Saved normalization stats to {norm_npz}")
 
 if __name__ == "__main__":
-    output_dir = 'exp_data'
-    save_dir = 'data_sep'
+    output_dir = 'Example_data/raw_data'
+    save_dir = 'Example_data/process_data'
     os.makedirs(output_dir, exist_ok=True)
     filepath = os.path.join(output_dir, file_name)
     zeropath = os.path.join(output_dir, file_zero)
