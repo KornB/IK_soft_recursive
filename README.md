@@ -1,4 +1,4 @@
-<img width="1407" height="709" alt="image" src="https://github.com/user-attachments/assets/1bf3f3ab-32a1-4c85-9b6d-b8379d15a050" /># RSCC Pressure Generation – Code for RAL 2026 submission
+# RSCC Pressure Generation – Code for RAL 2026 submission
 
 This repository contains data preparation, training, and inference scripts for the RAL 2026 paper “ML Hysteresis & Crosstalk Compensation for a Soft Manipulator.” It trains LSTM/Transformer models for inverse kinematics and crosstalk compensation, and generates RSCC pressure commands for two soft arm segments.
 
