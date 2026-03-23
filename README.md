@@ -44,13 +44,14 @@ This repository uses raw tracked-sensor logs and pressure commands to build trai
    If used, this model should predict proximal 2D tip response `[X, Y]` from distal pressures `[P4, P5, P6]`
 
    ```text
-Raw CSV (0A, 0B, 0C)
-    ↓
-Preprocessing
-(frame transform + feature extraction)
-    ↓
-Segment States
-[s_prox, s_dist]
+   
+    Raw CSV (0A, 0B, 0C)
+        ↓
+    Preprocessing
+    (frame transform + feature extraction)
+        ↓
+    Segment States
+    [s_prox, s_dist]
 
     ├── Proximal Model → [P1,P2,P3]
     │           ↓
